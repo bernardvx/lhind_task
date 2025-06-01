@@ -1,4 +1,4 @@
-variable "resourece_group_name" {
+variable "resource_group_name" {
   description = "The name of the resource group where the resources will be created."
   type        = string
   default     = "databricks-rg"
@@ -31,7 +31,7 @@ variable "public_subnet_name" {
 variable "public_subnet_prefix" {
     description = "The address prefix for the public subnet."
     type        = string
-    deafult     = "10.0.1.0/24"
+    default     = "10.0.1.0/24"
 }
 
 variable "private_subnet_name" {
@@ -44,6 +44,12 @@ variable "private_subnet_prefix" {
   description = "The address prefix for the private subnet."
   type        = string
   default     = "10.0.2.0/24"
+}
+
+variable "nsg_name" {
+  description = "Name of the Network Security Group"
+  type        = string
+  default     = "databricks-nsg"
 }
 
 variable "storage_account_name" {
