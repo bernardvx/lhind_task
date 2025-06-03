@@ -96,10 +96,10 @@ resource "azurerm_databricks_workspace" "databricks" {
   sku                 = "premium"
 
   custom_parameters {
-    no_public_ip         = true
-    virtual_network_id   = azurerm_virtual_network.vnet.id
-    public_subnet_name   = azurerm_subnet.public.name
-    private_subnet_name  = azurerm_subnet.private.name
+    no_public_ip        = true
+    virtual_network_id  = azurerm_virtual_network.vnet.id
+    public_subnet_name  = azurerm_subnet.public.name
+    private_subnet_name = azurerm_subnet.private.name
   }
 
   depends_on = [

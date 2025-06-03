@@ -17,9 +17,9 @@ variable "vnet_name" {
 }
 
 variable "vnet_address_space" {
-    description = "The address space for the virtual network."
-    type        = string
-    default     = "10.0.0.0/16"
+  description = "The address space for the virtual network."
+  type        = string
+  default     = "10.0.0.0/16"
 }
 
 variable "public_subnet_name" {
@@ -29,9 +29,9 @@ variable "public_subnet_name" {
 }
 
 variable "public_subnet_prefix" {
-    description = "The address prefix for the public subnet."
-    type        = string
-    default     = "10.0.1.0/24"
+  description = "The address prefix for the public subnet."
+  type        = string
+  default     = "10.0.1.0/24"
 }
 
 variable "private_subnet_name" {
