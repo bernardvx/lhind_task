@@ -1,0 +1,90 @@
+# Azure DevOps pipeline for Terraform deployment using Terraform Docker container
+trigger:
+  branches:
+    include:
+      - main  # Trigger on pushes to main branch
+
+pool:
+  vmImage: 'ubuntu-latest'  # Microsoft-hosted Ubuntu agent with Docker support
+
+container: 'hashicorp/terraform:latest'  # Use Terraform Docker container
+
+stages:
+  - stage: Verify
+    displayName: 'Verify Terraform Configuration'
+    jobs:
+      - job: Verify
+        displayName: 'Run Terraform Validate and Format'
+        steps:
+          - script: |
+              terraform fmt -check -recursive
+            displayName: 'Check Terraform Formatting'
+            workingDirectory: 'infrastructure'
+          - script: |
+              terraform init -backend-config="resource_group_name=tfstate-rg" \
+                            -backend-config="storage_account_name=tfstate$(echo $RANDOM | tr '[0-9]' '[a-z]')" \
+                            -backend-config="container_name=tfstate-container" \
+                            -backend-config="key=terraform.tfstate"
+              terraform validate
+            displayName: 'Initialize and Validate Terraform'
+            workingDirectory: 'infrastructure'
+            env:
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+
+  - stage: Plan
+    displayName: 'Plan Terraform Changes'
+    dependsOn: Verify
+    condition: succeeded()
+    jobs:
+      - job: Plan
+        displayName: 'Run Terraform Plan'
+        steps:
+          - script: |
+              terraform init -backend-config="resource_group_name=tfstate-rg" \
+                            -backend-config="storage_account_name=tfstate$(echo $RANDOM | tr '[0-9]' '[a-z]')" \
+                            -backend-config="container_name=tfstate-container" \
+                            -backend-config="key=terraform.tfstate"
+              terraform plan -out=tfplan
+            displayName: 'Initialize and Run Terraform Plan'
+            workingDirectory: 'infrastructure'
+            env:
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Terraform Plan Artifact'
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/infrastructure/tfplan'
+              artifact: 'terraform-plan'
+              publishLocation: 'pipeline'
+
+  - stage: Deploy
+    displayName: 'Deploy Terraform Infrastructure'
+    dependsOn: Plan
+    condition: succeeded()
+    jobs:
+      - job: Deploy
+        displayName: 'Run Terraform Apply'
+        steps:
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Terraform Plan Artifact'
+            inputs:
+              artifact: 'terraform-plan'
+              path: '$(System.DefaultWorkingDirectory)/infrastructure'
+          - script: |
+              terraform init -backend-config="resource_group_name=tfstate-rg" \
+                            -backend-config="storage_account_name=tfstate$(echo $RANDOM | tr '[0-9]' '[a-z]')" \
+                            -backend-config="container_name=tfstate-container" \
+                            -backend-config="key=terraform.tfstate"
+              terraform apply -auto-approve tfplan
+            displayName: 'Initialize and Apply Terraform'
+            workingDirectory: 'infrastructure'
+            env:
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
